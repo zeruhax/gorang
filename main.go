@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/cheggaaa/pb/v3"
 	"log"
 	"net"
 	"os"
@@ -45,12 +46,20 @@ func CidrIp(files string) {
 		log.Fatal(err)
 	}
 	scanner := bufio.NewScanner(file)
+	bar := pb.StartNew(len(result))
 	for scanner.Scan() {
 		go expandCidr(scanner.Text(), result)
 		for _, ip := range <-result {
-			fmt.Println(ip)
+			w, _ := os.OpenFile("result.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			_, _ = w.WriteString(ip + "\n")
+			bar.Increment()
 		}
 	}
+	bar.Finish()
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+	close(result)
 }
 
 func main() {
